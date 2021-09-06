@@ -12,7 +12,7 @@ int taskIdA;
 int taskIdB;
 int taskIdC;
 
-// you can define your tasks like those.
+// you can define your tasks like these.
 int led1(void *dummy) {
     digitalWrite(A0, !digitalRead(A0));
     return 0;
