@@ -156,12 +156,8 @@ ISR (TIMER2_COMPA_vect) {
 #endif
     noInterrupts();
     for(int i = 0; i < g_task_num; i++) {
-        //if(g_taskInfo[i]._task_id != i) {
-        //    break;
-        //}
         if(g_taskInfo[i]._task_state == EZMTS_TASK_RUNNING) {
             if(--g_taskInfo[i]._time_rest == 0) {
-                //_taskInfo[i]._task_state = EZMTS_TASK_STOPPED;
                 g_taskInfo[i]._time_rest = g_taskInfo[i]._timeout_val;
                 interrupts();
                 g_taskInfo[i]._cb_func(NULL);
