@@ -7,4 +7,4 @@ handler for Timer2. You should not use tone() in your sketch when using
 this library.
 
 To use this library on Arduino IDE, put ezMTS.hpp to the path 
-- C:\Users\<user>\Documents\Arduino\libraries\ezMTS (Windows)
+- C:\Users\user\Documents\Arduino\libraries\ezMTS (Windows)
