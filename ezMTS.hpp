@@ -1,6 +1,6 @@
 /*
 ezMTS(Easy Multitasking System) is a library for Arduino with ATMEGA 
-Microcontrollers. This provides simple multitasking-like system to your 
+microcontrollers. This provides simple multitasking-like system to your 
 Arduino. You can use multiple loop()-like functions on your Arduino 
 sketch. This is not an operating system but an extension of an interrupt 
 handler for Timer2. You should not use tone() in your sketch when using 
@@ -41,6 +41,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #define EZMTS_TASK_UNUSED   (0)
 #define EZMTS_TASK_STOPPED  (1)
 #define EZMTS_TASK_RUNNING  (2)
+
+// specify when FIRST executes the callback function registered by .start().
+#define EZMTS_TIMEDOUT  (0) // default
+#define EZMTS_AT_ONCE   (1)
 
 // task handling information
 class taskInfo {
@@ -111,7 +115,7 @@ class ezMTS {
         noInterrupts();
         return ret;
     }
-    int start(int task_id, long timeout_val) {
+    int start(int task_id, long timeout_val, int when_exec = EZMTS_TIMEDOUT) {
         int ret = -1;
         noInterrupts();
         if((task_id < 0) || (task_id > g_task_num - 1) || timeout_val < 0) {
@@ -123,6 +127,10 @@ class ezMTS {
         g_taskInfo[task_id]._time_rest = timeout_val;
         ret = 0;
         interrupts();
+        if(when_exec == EZMTS_AT_ONCE) {
+            g_taskInfo[task_id]._cb_func(NULL);
+        }
+
         return ret;
     }
     int stop(int task_id) {
@@ -158,6 +166,7 @@ ISR (TIMER2_COMPA_vect) {
     for(int i = 0; i < g_task_num; i++) {
         if(g_taskInfo[i]._task_state == EZMTS_TASK_RUNNING) {
             if(--g_taskInfo[i]._time_rest == 0) {
+                //_taskInfo[i]._task_state = EZMTS_TASK_STOPPED;
                 g_taskInfo[i]._time_rest = g_taskInfo[i]._timeout_val;
                 interrupts();
                 g_taskInfo[i]._cb_func(NULL);
