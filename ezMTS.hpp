@@ -109,7 +109,6 @@ class ezMTS {
                 g_taskInfo[i]._time_rest = 0;
                 g_taskInfo[i]._cb_func = cb_func;
                 ret = i;
-                interrupts();
                 break;
             }
         }
@@ -120,6 +119,7 @@ class ezMTS {
         int ret = -1;
         noInterrupts();
         if((task_id < 0) || (task_id > g_task_num - 1) || timeout_val < 0) {
+            interrupts();
             return ret;
         }
         g_taskInfo[task_id]._task_id = task_id;
