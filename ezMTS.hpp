@@ -109,10 +109,11 @@ class ezMTS {
                 g_taskInfo[i]._time_rest = 0;
                 g_taskInfo[i]._cb_func = cb_func;
                 ret = i;
+                interrupts();
                 break;
             }
         }
-        noInterrupts();
+        interrupts();
         return ret;
     }
     int start(int task_id, long timeout_val, int when_exec = EZMTS_TIMEDOUT) {
