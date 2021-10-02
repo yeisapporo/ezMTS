@@ -35,8 +35,14 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #include <Arduino.h>
 
-// when use timer1 for this library, comment out the following #define
-#define EZMTS_USE_TIMER2
+// specify the timer module that ezMTS occupies. (N) : TimerN(0, 1 or 2)
+// when using timer0 all Arduino time-related functions(such as delay())
+// may not work correctly. when using timer2 tone() must not be used. 
+#ifndef EZMTS_USE_TIMER
+//#define EZMTS_USE_TIMER (0)
+//#define EZMTS_USE_TIMER (1)
+#define EZMTS_USE_TIMER (2) // default
+#endif
 
 #define EZMTS_TASK_UNUSED   (0)
 #define EZMTS_TASK_STOPPED  (1)
@@ -64,6 +70,7 @@ class ezMTS {
 
     public:
     ezMTS(int task_num) {
+        noInterrupts();
         // keep the number of tasks available.
         g_task_num = task_num;
         // get task management area.
@@ -77,16 +84,27 @@ class ezMTS {
             g_taskInfo[i]._cb_func = NULL;
         }
         // settings for ATMEGA microcontroller timer interruption.
-#ifndef EZMTS_USE_TIMER2
-        // set timer interruption.
+// specify the timer module that ezMTS uses.
+#if (EZMTS_USE_TIMER == 0)
+        // ezMTS occupies Timer0.
+        TCCR0A = TCCR0B = 0;
+        // set mode to CTC.
+        TCCR0A |= (1 << WGM01);
+        // set prescaler to clk/64
+        TCCR0B |= (1 << CS01) | (1 << CS00);
+        // match every 1ms
+        OCR0A = 250 - 1;
+        TIMSK0 |= (1 << OCIE0A);
+#elif (EZMTS_USE_TIMER == 1)
+        // ezMTS occupies Timer1.
         TCCR1A = TCCR1B = 0;
         // set prescaler to clk/64
         TCCR1B |= (1 << WGM12) | (1 << CS11) | (1 << CS10);
         // match every 1ms
         OCR1A = 250 - 1;
         TIMSK1 |= (1 << OCIE1A);
-#else
-        // set timer interruption.
+#elif (EZMTS_USE_TIMER == 2)
+        // ezMTS occupies Timer2.
         TCCR2A = TCCR2B = 0;
         // set mode to CTC.
         TCCR2A |= (1 << WGM21);
@@ -96,6 +114,7 @@ class ezMTS {
         OCR2A = 250 - 1;
         TIMSK2 |= (1 << OCIE2A);
 #endif
+        interrupts();
     }
     int create(int (*cb_func)(void *)) {
         int ret = -1;
@@ -158,9 +177,11 @@ class ezMTS {
 };
 
 // timer interruption handler.
-#ifndef EZMTS_USE_TIMER2
+#if (EZMTS_USE_TIMER == 0)
+ISR (TIMER0_COMPA_vect) {
+#elif (EZMTS_USE_TIMER == 1)
 ISR (TIMER1_COMPA_vect) {
-#else
+#elif (EZMTS_USE_TIMER == 2)
 ISR (TIMER2_COMPA_vect) {
 #endif
     noInterrupts();
@@ -178,4 +199,4 @@ ISR (TIMER2_COMPA_vect) {
     interrupts();
 }
 
-#endif
+#endif  /* _HPP_EZMTS_HPP_ */
