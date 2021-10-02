@@ -4,6 +4,8 @@
 // Copyright (c) 2021 Kazuteru Yamada(yeisapporo). All rights reserved.
 /////////////////////////////////////////////////////////////////////////
 #include <Arduino.h>
+// splecify the the timer module ezMTS uses if needed (optional).
+//#define EZMTS_USE_TIMER (0)
 // include the header file below.
 #include <ezMTS.hpp>
 // specify the number of tasks you need.
