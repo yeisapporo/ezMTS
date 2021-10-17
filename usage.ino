@@ -4,11 +4,14 @@
 // Copyright (c) 2021 Kazuteru Yamada(yeisapporo). All rights reserved.
 /////////////////////////////////////////////////////////////////////////
 #include <Arduino.h>
+// for debugging
+//#include <fastDigitalRW.hpp>
 // splecify the the timer module ezMTS uses if needed (optional).
-//#define EZMTS_USE_TIMER (0)
+#define EZMTS_USE_TIMER (2)
 // include the header file below.
 #include <ezMTS.hpp>
 // specify the number of tasks you need.
+// by 2nd parameter, you can specify the unit of task interval value. EZMTS_MICROSEC:us, default:ms)
 ezMTS task(8);
 // define variables to retain your tasks' IDs.
 int taskIdA;
@@ -33,6 +36,9 @@ void setup() {
   pinMode(A4, OUTPUT);
   pinMode(A5, OUTPUT);
 
+  // for debugging
+  //pinMode(10, OUTPUT);
+
   // create your tasks.
   taskIdA = task.create(led1);
   taskIdB = task.create(led2);
@@ -40,9 +46,9 @@ void setup() {
 
   // start your tasks. arg1:task id, arg2:timeout value(ms),
   // arg3:when first executes the function rgistered(EZMTS_TIMEDOUT / EZMTS_AT_ONCE).
-  task.start(taskIdA, 3000, EZMTS_AT_ONCE);
-  task.start(taskIdB, 2000, EZMTS_AT_ONCE);
-  task.start(taskIdC, 1000, EZMTS_AT_ONCE);
+  task.start(taskIdA, 500, EZMTS_AT_ONCE);
+  task.start(taskIdB, 1000, EZMTS_AT_ONCE);
+  task.start(taskIdC, 2000, EZMTS_AT_ONCE);
 }
 void loop() {
   delay(1);
