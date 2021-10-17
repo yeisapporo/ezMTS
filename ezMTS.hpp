@@ -44,6 +44,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #define EZMTS_USE_TIMER (2) // default
 #endif
 
+// specify the unit of timer ivterval value.
+#define EZMTS_MILLISEC  (0) // default
+#define EZMTS_MICROSEC  (1)
+
 #define EZMTS_TASK_UNUSED   (0)
 #define EZMTS_TASK_STOPPED  (1)
 #define EZMTS_TASK_RUNNING  (2)
@@ -67,12 +71,20 @@ taskInfo *g_taskInfo = NULL;
 
 class ezMTS {
     private:
+    unsigned char _ocrna = 249; // OCRnA for millisec.
+    float _k = 1.0;             // coefficient for millisec.
 
     public:
-    ezMTS(int task_num) {
+    ezMTS(int task_num, int unit = EZMTS_MILLISEC) {
         noInterrupts();
         // keep the number of tasks available.
         g_task_num = task_num;
+        // prepare OCRnA and the coefficient according to the unit specified.
+        if(unit != EZMTS_MILLISEC) {
+            // for microsec.
+            _ocrna = 9;
+            _k = 0.02538071066;
+        }
         // get task management area.
         g_taskInfo = new taskInfo[task_num];
         // initialize task management variables.
@@ -90,28 +102,31 @@ class ezMTS {
         TCCR0A = TCCR0B = 0;
         // set mode to CTC.
         TCCR0A |= (1 << WGM01);
-        // set prescaler to clk/64
-        TCCR0B |= (1 << CS01) | (1 << CS00);
-        // match every 1ms
-        OCR0A = 250 - 1;
+        // set top to OCRA0 and prescaler to clk/64.
+        TCCR0B |= (1 << WGM02) | (1 << CS01) | (1 << CS00);
+        // set top value.
+        OCR0A = _ocrna;
         TIMSK0 |= (1 << OCIE0A);
 #elif (EZMTS_USE_TIMER == 1)
         // ezMTS occupies Timer1.
         TCCR1A = TCCR1B = 0;
-        // set prescaler to clk/64
+        // set mode to CTC.
+        //TCCR1A |= (0 << WGM10) | (0 << WGM11);
+        // set top to OCR1A and prescaler to clk/64
         TCCR1B |= (1 << WGM12) | (1 << CS11) | (1 << CS10);
-        // match every 1ms
-        OCR1A = 250 - 1;
+        // set top value.
+        OCR1A = _ocrna;
         TIMSK1 |= (1 << OCIE1A);
+
 #elif (EZMTS_USE_TIMER == 2)
         // ezMTS occupies Timer2.
         TCCR2A = TCCR2B = 0;
         // set mode to CTC.
         TCCR2A |= (1 << WGM21);
-        // set prescaler to clk/64
+        // set prescaler to clk/64.
         TCCR2B |= (1 << CS22);
-        // match every 1ms
-        OCR2A = 250 - 1;
+        // set to value.
+        OCR2A = _ocrna;
         TIMSK2 |= (1 << OCIE2A);
 #endif
         interrupts();
@@ -143,8 +158,8 @@ class ezMTS {
         }
         g_taskInfo[task_id]._task_id = task_id;
         g_taskInfo[task_id]._task_state = EZMTS_TASK_RUNNING;
-        g_taskInfo[task_id]._timeout_val = timeout_val;
-        g_taskInfo[task_id]._time_rest = timeout_val;
+        g_taskInfo[task_id]._timeout_val = timeout_val * _k;
+        g_taskInfo[task_id]._time_rest = g_taskInfo[task_id]._timeout_val;
         ret = 0;
         interrupts();
         if(when_exec == EZMTS_AT_ONCE) {
@@ -179,12 +194,16 @@ class ezMTS {
 // timer interruption handler.
 #if (EZMTS_USE_TIMER == 0)
 ISR (TIMER0_COMPA_vect) {
+    TCNT0 = 0;
 #elif (EZMTS_USE_TIMER == 1)
 ISR (TIMER1_COMPA_vect) {
+    TCNT1 = 0;
 #elif (EZMTS_USE_TIMER == 2)
 ISR (TIMER2_COMPA_vect) {
+    TCNT2 = 0;
 #endif
     noInterrupts();
+    //fastDigitalWrite(10, !digitalRead(10));
     for(int i = 0; i < g_task_num; i++) {
         if(g_taskInfo[i]._task_state == EZMTS_TASK_RUNNING) {
             if(--g_taskInfo[i]._time_rest == 0) {
